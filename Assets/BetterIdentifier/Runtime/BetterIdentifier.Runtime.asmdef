@@ -1,0 +1,20 @@
+{
+    "name": "BetterIdentifier.Runtime",
+    "rootNamespace": "Better.Identifier.Runtime",
+    "references": [
+        "GUID:01df13aca8d01e24a911bcc3e8277031",
+        "GUID:8bd4b41f8da90144d9006c4d926c9679",
+        "GUID:af7fffdf1d83bc842b0f6e3a01efda16",
+        "GUID:1862b35041b066d42ab4d3caf773657b",
+        "GUID:35101f455c979e94c9a0a4793484b7fd"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
