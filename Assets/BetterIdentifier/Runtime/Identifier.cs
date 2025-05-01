@@ -1,65 +1,82 @@
 ﻿using System;
+using System.Diagnostics;
 using Better.Attributes.Runtime.Manipulation;
 using Better.Commons.Runtime.Interfaces;
+using Better.Identifier.Runtime.Extensions;
 using UnityEngine;
 
 namespace Better.Identifier.Runtime
 {
+    [DebuggerDisplay("{ToString(),nq}")]
     [Serializable]
     public sealed class Identifier : INameable, IEquatable<Identifier>, IComparable<Identifier>
     {
-        private const int GuidByteSize = 16;
+        public readonly static Identifier Empty = new Identifier(nameof(Empty), Guid.Empty);
         private const int HashSeed = 17;
         private const int HashMultiplier = 31;
 
         [SerializeField] private string _name;
-        
+
         [ReadOnly]
         [SerializeField] private string _id;
-        
+
         private Guid _guid;
 
         public string Name => _name;
         public string Id => _id;
 
+        public Identifier() : this(string.Empty)
+        {
+        }
+
         public Identifier(string name) : this(name, Guid.NewGuid())
         {
         }
 
-        private Identifier(string name, Guid id)
+        private Identifier(string name, Guid guid)
         {
             _name = name;
-            _guid = id;
+            _guid = guid;
             _id = _guid.ToString();
         }
 
         public Identifier Join(Identifier other)
         {
-            if (ReferenceEquals(other, null))
+            if (other.IsEmptyOrNull())
             {
-                throw new ArgumentNullException(nameof(other));
+                var message = nameof(other);
+                throw new ArgumentNullException(message);
             }
             
+            if (this.IsEmptyOrNull())
+            {
+                var message = "this";
+                throw new ArgumentNullException(message);
+            }
+
             if (ReferenceEquals(this, other))
             {
-                throw new InvalidOperationException("Cannot join Identifier with itself.");
+                var message = "Cannot join Identifier with itself";
+                throw new InvalidOperationException(message);
             }
 
-            var guidLeft = AsGuid();
-            var guidRight = other.AsGuid();
+            var guid = AsGuid();
+            var otherGuid = other.AsGuid();
 
-            var bytesLeft = guidLeft.ToByteArray();
-            var bytesRight = guidRight.ToByteArray();
+            var guidBytes = guid.ToByteArray();
+            var otherGuidBytes = otherGuid.ToByteArray();
+            var minByteCount = Math.Min(guidBytes.Length, otherGuidBytes.Length);
 
-            Span<byte> merged = stackalloc byte[GuidByteSize];
-            for (var i = 0; i < GuidByteSize; i++)
+            Span<byte> merged = stackalloc byte[minByteCount];
+            for (var i = 0; i < minByteCount; i++)
             {
-                merged[i] = (byte)(bytesLeft[i] ^ bytesRight[i]);
+                merged[i] = (byte)(guidBytes[i] ^ otherGuidBytes[i]);
             }
 
-            var newGuid = new Guid(merged);
-            var newName = _name + other._name;
-            return new Identifier(newName, newGuid);
+            var joinedGuid = new Guid(merged);
+            var joinedName = Name + other.Name;
+            var joinedIdentifier = new Identifier(joinedName, joinedGuid);
+            return joinedIdentifier;
         }
 
         public Guid AsGuid()
@@ -68,7 +85,7 @@ namespace Better.Identifier.Runtime
             {
                 _guid = Guid.Parse(_id);
             }
-            
+
             return _guid;
         }
 
@@ -84,7 +101,12 @@ namespace Better.Identifier.Runtime
 
         public override bool Equals(object obj)
         {
-            return obj is Identifier other && Equals(other);
+            if (obj is Identifier otherIdentifier)
+            {
+                return Equals(otherIdentifier);
+            }
+
+            return false;
         }
 
         public override int GetHashCode()
@@ -92,7 +114,8 @@ namespace Better.Identifier.Runtime
             unchecked
             {
                 var hash = HashSeed;
-                hash = (hash * HashMultiplier) + Id.GetHashCode();
+                hash *= HashMultiplier;
+                hash += Id.GetHashCode();
                 return hash;
             }
         }
@@ -137,7 +160,7 @@ namespace Better.Identifier.Runtime
 
         public override string ToString()
         {
-            return $"{Name} [{Id}]";
+            return $"{Name}: [{Id}]";
         }
     }
 }
